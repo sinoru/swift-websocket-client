@@ -6,10 +6,10 @@ import PackageDescription
 let package = Package(
     name: "swift-websocket-client",
     platforms: [
-        .macOS(.v10_15),
-        .iOS(.v13),
-        .tvOS(.v13),
-        .watchOS(.v6),
+        .macOS(.v13),
+        .iOS(.v16),
+        .tvOS(.v16),
+        .watchOS(.v9),
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
@@ -18,7 +18,6 @@ let package = Package(
             targets: ["WebSocketClient"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-algorithms.git", from: "1.2.0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.67.0"),
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.27.0"),
         .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.21.0"),
@@ -30,7 +29,6 @@ let package = Package(
         .target(
             name: "WebSocketClient",
             dependencies: [
-                .product(name: "Algorithms", package: "swift-algorithms"),
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "NIOHTTP1", package: "swift-nio"),
