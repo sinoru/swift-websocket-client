@@ -66,7 +66,7 @@ public struct WebSocketClient {
         #else
         let bootstrap = ClientBootstrap(group: configuration.threadPool.eventLoopGroup)
         #if canImport(NIOSSL)
-        let sslContext = url.scheme == "wss" ? try NIOSSLContext(configuration: .clientDefault) : nil
+        let sslContext = isSecure ? try NIOSSLContext(configuration: .clientDefault) : nil
         #endif
         #endif
 
