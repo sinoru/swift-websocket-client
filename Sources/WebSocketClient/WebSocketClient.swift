@@ -78,7 +78,7 @@ public struct WebSocketClient {
                 channel.eventLoop.makeCompletedFuture {
                     #if canImport(NIOSSL) && !canImport(NIOTransportServices)
                     if let sslContext = sslContext {
-                        let sslClientHandler = try NIOSSLClientHandler(context: sslContext, serverHostname: self.url.host)
+                        let sslClientHandler = try NIOSSLClientHandler(context: sslContext, serverHostname: host)
 
                         channel.pipeline.addHandler(sslClientHandler)
                     }
