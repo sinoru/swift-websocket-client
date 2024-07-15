@@ -16,6 +16,9 @@ let package = Package(
         .library(
             name: "WebSocketClient",
             targets: ["WebSocketClient"]),
+        .library(
+            name: "WebSocketClientFoundationCompat",
+            targets: ["WebSocketClientFoundationCompat"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.67.0"),
@@ -41,6 +44,11 @@ let package = Package(
                     name: "NIOSSL",
                     package: "swift-nio-ssl",
                     condition: .when(platforms: [.android, .linux, .openbsd, .wasi, .windows])),
+            ]),
+        .target(
+            name: "WebSocketClientFoundationCompat",
+            dependencies: [
+                "WebSocketClient",
             ]),
         .testTarget(
             name: "WebSocketClientTests",
