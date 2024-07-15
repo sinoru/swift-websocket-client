@@ -14,23 +14,24 @@ extension WebSocketClient.CloseCode {
     }
 }
 
+extension ByteBuffer {
+    init(_ webSocketData: WebSocketClient.Data) {
+        switch webSocketData {
+        case .ping(let string):
+            self.init(string: string)
+        case .text(let string):
+            self.init(string: string)
+        case .binary(let data):
+            self.init(bytes: data)
+        case .close(let closeCode):
+            self.init()
+            write(webSocketErrorCode: closeCode.webSocketErrorCode)
+        }
+    }
+}
+
 extension WebSocketFrame {
     init(_ webSocketData: WebSocketClient.Data) {
-        let byteBuffer: ByteBuffer = {
-            switch webSocketData {
-            case .ping(let string):
-                return ByteBuffer(string: string)
-            case .text(let string):
-                return ByteBuffer(string: string)
-            case .binary(let data):
-                return ByteBuffer(bytes: data)
-            case .close(let closeCode):
-                var byteBuffer = ByteBuffer()
-                byteBuffer.write(webSocketErrorCode: closeCode.webSocketErrorCode)
-                return byteBuffer
-            }
-        }()
-
         self.init(
             fin: true,
             opcode: {
@@ -46,7 +47,7 @@ extension WebSocketFrame {
                 }
             }(),
             maskKey: .random(),
-            data: byteBuffer
+            data: ByteBuffer(webSocketData)
         )
     }
 }
@@ -60,9 +61,7 @@ extension WebSocketClient {
         }
 
         public func write(_ data: Data) async throws {
-            let frame = WebSocketFrame(data)
-
-            try await asyncChannelOutboundWriter.write(frame)
+            try await asyncChannelOutboundWriter.write(WebSocketFrame(data))
         }
 
         public func write<Writes: Sequence>(contentsOf sequence: Writes) async throws where Writes.Element == Data {
