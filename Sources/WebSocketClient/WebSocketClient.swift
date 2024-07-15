@@ -5,7 +5,6 @@
 //  Created by Jaehong Kang on 7/10/24.
 //
 
-import Foundation
 import NIOCore
 import NIOHTTP1
 import NIOWebSocket
@@ -19,14 +18,37 @@ import NIOSSL
 #endif
 
 public struct WebSocketClient {
-    public let url: URL
+    public let host: String
+    public let port: Int
+    public let isSecure: Bool
     public let configuration: Configuration
 
+    private var upgradeRequestHTTPHeaders: HTTPHeaders {
+        .init([
+            ("Host", host),
+            ("Content-Type", "text/plain; charset=utf-8"),
+            ("Content-Length", "0"),
+        ])
+    }
+
+    private var upgradeRequestHTTPRequestHead: HTTPRequestHead {
+        .init(
+            version: .http1_1,
+            method: .GET,
+            uri: "/",
+            headers: upgradeRequestHTTPHeaders
+        )
+    }
+
     public init(
-        url: URL,
+        host: String,
+        port: Int,
+        isSecure: Bool,
         configuration: Configuration
     ) {
-        self.url = url
+        self.host = host
+        self.port = port
+        self.isSecure = isSecure
         self.configuration = configuration
     }
 
@@ -34,23 +56,24 @@ public struct WebSocketClient {
         _ body: (_ inbound: Inbound, _ outbound: Outbound) async throws -> Result
     ) async throws -> Result {
         #if canImport(NIOTransportServices)
-        var bootstrap = NIOTSConnectionBootstrap(group: configuration.threadPool.eventLoopGroup)
+        let bootstrap = {
+            var bootstrap = NIOTSConnectionBootstrap(group: configuration.threadPool.eventLoopGroup)
+            if isSecure {
+                bootstrap = bootstrap.tlsOptions(NWProtocolTLS.Options())
+            }
+            return bootstrap
+        }()
         #else
         let bootstrap = ClientBootstrap(group: configuration.threadPool.eventLoopGroup)
-        #endif
-
-        #if canImport(NIOTransportServices)
-        if url.scheme == "wss" {
-            bootstrap = bootstrap.tlsOptions(NWProtocolTLS.Options())
-        }
-        #elseif canImport(NIOSSL)
+        #if canImport(NIOSSL)
         let sslContext = url.scheme == "wss" ? try NIOSSLContext(configuration: .clientDefault) : nil
+        #endif
         #endif
 
         let channel = try await bootstrap
             .connect(
-                host: url.host!,
-                port: url.port ?? 443
+                host: host,
+                port: port
             ) { channel in
                 channel.eventLoop.makeCompletedFuture {
                     #if canImport(NIOSSL) && !canImport(NIOTransportServices)
@@ -70,21 +93,9 @@ public struct WebSocketClient {
                         }
                     )
 
-                    var headers = HTTPHeaders()
-                    headers.add(name: "Host", value: url.host!)
-                    headers.add(name: "Content-Type", value: "text/plain; charset=utf-8")
-                    headers.add(name: "Content-Length", value: "0")
-
-                    let requestHead = HTTPRequestHead(
-                        version: .http1_1,
-                        method: .GET,
-                        uri: "/",
-                        headers: headers
-                    )
-
                     var upgradableHTTPClientPipelineConfiguration = NIOUpgradableHTTPClientPipelineConfiguration(
                         upgradeConfiguration: .init(
-                            upgradeRequestHead: requestHead,
+                            upgradeRequestHead: upgradeRequestHTTPRequestHead,
                             upgraders: [upgrader],
                             notUpgradingCompletionHandler: { channel in
                                 channel.eventLoop.makeCompletedFuture {
