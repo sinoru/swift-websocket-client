@@ -57,14 +57,14 @@ public struct WebSocketClient {
     ) async throws -> Result {
         #if canImport(NIOTransportServices)
         let bootstrap = {
-            var bootstrap = NIOTSConnectionBootstrap(group: configuration.threadPool.eventLoopGroup)
+            var bootstrap = NIOTSConnectionBootstrap(group: configuration.eventLoopGroup ?? NIOSingletons.transportServicesEventLoopGroup)
             if isSecure {
                 bootstrap = bootstrap.tlsOptions(NWProtocolTLS.Options())
             }
             return bootstrap
         }()
         #else
-        let bootstrap = ClientBootstrap(group: configuration.threadPool.eventLoopGroup)
+        let bootstrap = ClientBootstrap(group: configuration.eventLoopGroup ?? NIOSingletons.posixEventLoopGroup)
         #if canImport(NIOSSL)
         let sslContext = isSecure ? try NIOSSLContext(configuration: .clientDefault) : nil
         #endif
